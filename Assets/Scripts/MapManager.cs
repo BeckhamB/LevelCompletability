@@ -6,7 +6,8 @@ public class MapManager : MonoBehaviour
 {
     public Pathfinding pathfinding;
     public MapGenerator mapGenerator;
-    public GameObject playerAgentPrefab;
+    public GameObject playerPrefab;
+    public GameObject itemPrefab;
 
     private Tile _startTile;
     private Tile _endTile;
@@ -19,9 +20,9 @@ public class MapManager : MonoBehaviour
         HandleInput();
     }
 
-    private void CalculatePath()
+    private void CalculatePath(Tile newStartTile, Tile newEndTile)
     {
-        Queue<Tile> path = pathfinding.GetPath(_startTile, _endTile);
+        Queue<Tile> path = pathfinding.GetPath(newStartTile, newEndTile);
 
         if (path == null)
         {
@@ -35,10 +36,10 @@ public class MapManager : MonoBehaviour
                 t.SetColour(new Color(1, 0.6f, 0));
             }
 
-            _endTile.SetColour(Color.red);
-            _endTile.SetText("End");
-            _startTile.SetColour(Color.cyan);
-            _startTile.SetText("Start");
+            newEndTile.SetColour(Color.red);
+            newEndTile.SetText("End");
+            newStartTile.SetColour(Color.cyan);
+            newStartTile.SetText("Start");
         }
     }
 
@@ -124,13 +125,28 @@ public class MapManager : MonoBehaviour
             if (_pathMovement == null)
             {
                 
-                _pathMovement = Instantiate(playerAgentPrefab, _newStartTile, Quaternion.identity).GetComponent<PathMovement>();
+                _pathMovement = Instantiate(playerPrefab, _newStartTile, Quaternion.identity).GetComponent<PathMovement>();
             }
             else
                 _pathMovement.transform.position = _newStartTile;
 
             Queue<Tile> generatedPath = pathfinding.GetPath(_startTile, _endTile);
             _pathMovement.SetPath(generatedPath);
+        }
+        if(Input.GetKeyDown(KeyCode.M))
+        {
+            Tile selectedTile = GetSelectedTile();
+            Vector3 newItemTilePos = new Vector3(selectedTile.transform.position.x, selectedTile.transform.position.y + 2f, selectedTile.transform.position.z);
+            if (selectedTile != null && _startTile != null)
+            {
+                GameObject spawnedItem = Instantiate(itemPrefab, newItemTilePos, Quaternion.identity);
+                RepaintMap();
+                CalculatePath(_startTile, selectedTile);
+            }
+            if(_startTile == null)
+            {
+                Debug.LogError("There is no starting location selected");
+            }
         }
     }
 
@@ -166,7 +182,7 @@ public class MapManager : MonoBehaviour
 
         if (_startTile != null && _endTile != null)
         {
-            CalculatePath();
+            CalculatePath(_startTile, _endTile);
         }
     }
 }

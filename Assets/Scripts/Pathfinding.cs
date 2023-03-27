@@ -35,6 +35,7 @@ public class Pathfinding : MonoBehaviour
                     if (neighbour.GetTileType() != Tile.TileType.Wall)
                     {
                         costToReachTile[neighbour] = newCost;
+                        Debug.Log(Distance(neighbour, start));
                         int priority = newCost + Distance(neighbour, start);
                         frontier.Enqueue(neighbour, priority);
                         nextTileTowardsGoal[neighbour] = curTile;

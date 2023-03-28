@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using TMPro;
 
 public class MapManager : MonoBehaviour
 {
@@ -9,6 +10,14 @@ public class MapManager : MonoBehaviour
     public MapGenerator mapGenerator;
     public GameObject playerPrefab;
     public GameObject itemPrefab;
+    public TextMeshProUGUI UnreachableItem;
+    public TextMeshProUGUI UnreachableGoal;
+    public TextMeshProUGUI NotEnoughMoves;
+    public TextMeshProUGUI NoStartSelected;
+    public GameObject inputField;
+
+    public int maximumMoves = 0;
+
 
     private Tile _startTile;
     private Tile _endTile;
@@ -22,35 +31,45 @@ public class MapManager : MonoBehaviour
     private void Update()
     {
         HandleInput();
-        if(cachedTile != null && _startTile != null)
-        {
-            foreach(Tile t in cachedTile)
-            {
-                CalculatePath(_startTile, t);
-            }
-        }
+        UpdateInputField();
+        CalculateItemPath();
+        MaxMovesManager();
     }
 
-    private Queue<Tile> CalculatePath(Tile newStartTile, Tile newEndTile)
+    private Queue<Tile> CalculatePath(Tile newStartTile, Tile newEndTile, GameObject item)
     {
         Queue<Tile> path = pathfinding.GetPath(newStartTile, newEndTile);
-
+        
         if (path == null)
         {
-            Debug.LogWarning("Goal not reachable");
+            if(item != null)
+            {
+                item.GetComponent<HighlightSwap>().SetUnreachableMaterial();
+                UnreachableItem.gameObject.SetActive(true);
+            }
+            else
+            {
+                UnreachableGoal.gameObject.SetActive(true);
+            }
         }
 
         else
         {
+            if (item != null)
+            {
+                item.GetComponent<HighlightSwap>().SetReachableMaterial();
+                UnreachableItem.gameObject.SetActive(false);
+            }
             foreach (Tile t in path)
             {
                 t.SetColour(new Color(1, 0.6f, 0));
             }
-
+            
             newEndTile.SetColour(Color.red);
             newEndTile.SetText("End");
             newStartTile.SetColour(Color.cyan);
             newStartTile.SetText("Start");
+            UnreachableGoal.gameObject.SetActive(false);
         }
         return path;
     }
@@ -95,7 +114,7 @@ public class MapManager : MonoBehaviour
             Tile selectedTile = GetSelectedTile();
             if (selectedTile != null)
             {
-                selectedTile.SetTileType(Tile.TileType.Plains);
+                selectedTile.SetTileType(Tile.TileType.Ground);
                 RepaintMap();
             }
         }
@@ -104,7 +123,7 @@ public class MapManager : MonoBehaviour
             Tile selectedTile = GetSelectedTile();
             if (selectedTile != null)
             {
-                selectedTile.SetTileType(Tile.TileType.Wood);
+                selectedTile.SetTileType(Tile.TileType.Rocks);
                 RepaintMap();
             }
         }
@@ -113,8 +132,11 @@ public class MapManager : MonoBehaviour
             Tile selectedTile = GetSelectedTile();
             if (selectedTile != null)
             {
-                selectedTile.SetTileType(Tile.TileType.Wall);
-                RepaintMap();
+                if(selectedTile != _startTile && selectedTile != _endTile)
+                {
+                    selectedTile.SetTileType(Tile.TileType.Wall);
+                    RepaintMap();
+                }
             }
         }
 
@@ -122,7 +144,7 @@ public class MapManager : MonoBehaviour
         {
             foreach (Tile t in mapGenerator.grid)
             {
-                t.SetText(t._X + ", " + t._Y);
+                t.SetText(t.GetX() + ", " + t.GetY());
             }
         }
 
@@ -145,29 +167,36 @@ public class MapManager : MonoBehaviour
             Queue<Tile> generatedPath = pathfinding.GetPath(_startTile, _endTile);
             _pathMovement.SetPath(generatedPath);
         }
-        if(Input.GetKeyDown(KeyCode.M))
+        if(Input.GetKeyDown(KeyCode.R))
         {
             Tile selectedTile = GetSelectedTile();
-            Vector3 newItemTilePos = new Vector3(selectedTile.transform.position.x, selectedTile.transform.position.y + 2f, selectedTile.transform.position.z);
-            if (selectedTile != null && _startTile != null)
+            if(selectedTile != null)
             {
-                cachedGameObjects.Add(Instantiate(itemPrefab, newItemTilePos, Quaternion.identity));
-                RepaintMap();
-                cachedTile.Add(selectedTile);
-                CalculatePath(_startTile, selectedTile);
-            }
-            if(_startTile == null)
-            {
-                Debug.LogError("There is no starting location selected");
+                Vector3 newItemTilePos = new Vector3(selectedTile.transform.position.x, selectedTile.transform.position.y + 1f, selectedTile.transform.position.z);
+                if (selectedTile != null && _startTile != null && selectedTile != _startTile)
+                {
+                    cachedGameObjects.Add(Instantiate(itemPrefab, newItemTilePos, Quaternion.identity));
+                    RepaintMap();
+                    cachedTile.Add(selectedTile);
+                    CalculatePath(_startTile, selectedTile, cachedGameObjects.Last());
+                }
+                if (_startTile == null)
+                {
+                    Debug.LogError("There is no starting location selected");
+                }
             }
         }
-        if(Input.GetKeyDown(KeyCode.N))
+        if(Input.GetKeyDown(KeyCode.Y))
         {
             RemoveItems();
         }
-        if(Input.GetKeyDown(KeyCode.O))
+        if(Input.GetKeyDown(KeyCode.T))
         {
             RemoveLastItem();
+        }
+        if(Input.GetKeyDown(KeyCode.Escape))
+        {
+            Application.Quit();
         }
     }
 
@@ -203,11 +232,11 @@ public class MapManager : MonoBehaviour
 
         if (_startTile != null && _endTile != null)
         {
-            CalculatePath(_startTile, _endTile);
+            CalculatePath(_startTile, _endTile, null);
         }
     }
 
-    public void RemoveItems()
+    private void RemoveItems()
     {
         cachedTile.Clear();
         foreach(GameObject obj in cachedGameObjects)
@@ -215,14 +244,55 @@ public class MapManager : MonoBehaviour
             Destroy(obj);
         }
         cachedGameObjects.Clear();
+        RepaintMap();
     }
-    public void RemoveLastItem()
+    private void RemoveLastItem()
     {
         if(cachedTile.Count > 0 && cachedGameObjects.Count > 0)
         {
             cachedTile.Remove(cachedTile.Last());
             Destroy(cachedGameObjects.Last());
             cachedGameObjects.Remove(cachedGameObjects.Last());
+            RepaintMap();
+        }
+    }
+    private void CalculateItemPath()
+    {
+        if (cachedTile != null && _startTile != null)
+        {
+            foreach (Tile t in cachedTile)
+            {
+                foreach(GameObject obj in cachedGameObjects)
+                {
+                    CalculatePath(_startTile, t, obj);
+                }
+            }
+        }
+    }
+
+    private void MaxMovesManager()
+    {
+        if (maximumMoves > 0)
+        {
+            if (_startTile != null && _endTile != null)
+            {
+                if (pathfinding.Distance(_startTile, _endTile) > maximumMoves)
+                {
+                    NotEnoughMoves.gameObject.SetActive(true);
+                }
+                else
+                {
+                    NotEnoughMoves.gameObject.SetActive(false);
+                }
+            }
+        }
+    }
+    private void UpdateInputField()
+    {
+        if (inputField.GetComponent<TMP_InputField>().text != null)
+        {
+            int.TryParse(inputField.GetComponent<TMP_InputField>().text, out int result);
+            maximumMoves = result;
         }
     }
 }

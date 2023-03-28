@@ -63,8 +63,8 @@ public class Pathfinding : MonoBehaviour
         return AStar(start, end);
     }
 
-    int Distance(Tile t1, Tile t2)
+    public int Distance(Tile t1, Tile t2)
     {
-        return Mathf.Abs(t1._X - t2._X) + Mathf.Abs(t1._Y - t2._Y);
+        return Mathf.Abs(t1.GetX() - t2.GetX()) + Mathf.Abs(t1.GetY() - t2.GetY());
     }
 }

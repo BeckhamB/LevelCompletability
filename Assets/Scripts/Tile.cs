@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,13 +5,13 @@ public class Tile : MonoBehaviour
 {
     public enum TileType
     {
-        Plains,
+        Ground,
         Wall,
-        Wood
+        Rocks
     }
 
-    public GameObject _woodGO;
-    public GameObject _wallGO;
+    public GameObject rockGameObj;
+    public GameObject wallGameObj;
 
     public Text text;
     public Color cachedColour;
@@ -37,8 +35,8 @@ public class Tile : MonoBehaviour
     }
 
     public Color GetColour()
-    { 
-        return _renderer.material.color; 
+    {
+        return _renderer.material.color;
     }
     public void SetColour(Color colour)
     {
@@ -46,7 +44,7 @@ public class Tile : MonoBehaviour
     }
     public void SetText(string value)
     {
-        text.text = value; 
+        text.text = value;
     }
     public string GetText()
     {
@@ -61,17 +59,17 @@ public class Tile : MonoBehaviour
         _tileType = tileType;
         switch (_tileType)
         {
-            case TileType.Plains:
-                _woodGO.SetActive(false);
-                _wallGO.SetActive(false);
+            case TileType.Ground:
+                rockGameObj.SetActive(false);
+                wallGameObj.SetActive(false);
                 break;
             case TileType.Wall:
-                _woodGO.SetActive(false);
-                _wallGO.SetActive(true);
+                rockGameObj.SetActive(false);
+                wallGameObj.SetActive(true);
                 break;
-            case TileType.Wood:
-                _woodGO.SetActive(true);
-                _wallGO.SetActive(false);
+            case TileType.Rocks:
+                rockGameObj.SetActive(true);
+                wallGameObj.SetActive(false);
                 break;
         }
     }
@@ -79,11 +77,17 @@ public class Tile : MonoBehaviour
     {
         return _tileType switch
         {
-            TileType.Plains => 1,
-            TileType.Wood => 5,
+            TileType.Ground => 1,
+            TileType.Rocks => 3,
             _ => 0,
         };
     }
-    public int _X => _x; 
-    public int _Y => _y;
+    public int GetX()
+    {
+        return _x;
+    }
+    public int GetY()
+    {
+        return _y;
+    }
 }

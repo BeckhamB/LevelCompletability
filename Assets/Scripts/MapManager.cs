@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class MapManager : MonoBehaviour
@@ -14,13 +15,23 @@ public class MapManager : MonoBehaviour
     private Vector3 _newStartTile;
     private PathMovement _pathMovement;
 
+    public List<Tile> cachedTile = new();
+    public List<GameObject> cachedGameObjects = new();
+
 
     private void Update()
     {
         HandleInput();
+        if(cachedTile != null && _startTile != null)
+        {
+            foreach(Tile t in cachedTile)
+            {
+                CalculatePath(_startTile, t);
+            }
+        }
     }
 
-    private void CalculatePath(Tile newStartTile, Tile newEndTile)
+    private Queue<Tile> CalculatePath(Tile newStartTile, Tile newEndTile)
     {
         Queue<Tile> path = pathfinding.GetPath(newStartTile, newEndTile);
 
@@ -41,6 +52,7 @@ public class MapManager : MonoBehaviour
             newStartTile.SetColour(Color.cyan);
             newStartTile.SetText("Start");
         }
+        return path;
     }
 
     private void HandleInput()
@@ -139,14 +151,23 @@ public class MapManager : MonoBehaviour
             Vector3 newItemTilePos = new Vector3(selectedTile.transform.position.x, selectedTile.transform.position.y + 2f, selectedTile.transform.position.z);
             if (selectedTile != null && _startTile != null)
             {
-                GameObject spawnedItem = Instantiate(itemPrefab, newItemTilePos, Quaternion.identity);
+                cachedGameObjects.Add(Instantiate(itemPrefab, newItemTilePos, Quaternion.identity));
                 RepaintMap();
+                cachedTile.Add(selectedTile);
                 CalculatePath(_startTile, selectedTile);
             }
             if(_startTile == null)
             {
                 Debug.LogError("There is no starting location selected");
             }
+        }
+        if(Input.GetKeyDown(KeyCode.N))
+        {
+            RemoveItems();
+        }
+        if(Input.GetKeyDown(KeyCode.O))
+        {
+            RemoveLastItem();
         }
     }
 
@@ -183,6 +204,25 @@ public class MapManager : MonoBehaviour
         if (_startTile != null && _endTile != null)
         {
             CalculatePath(_startTile, _endTile);
+        }
+    }
+
+    public void RemoveItems()
+    {
+        cachedTile.Clear();
+        foreach(GameObject obj in cachedGameObjects)
+        {
+            Destroy(obj);
+        }
+        cachedGameObjects.Clear();
+    }
+    public void RemoveLastItem()
+    {
+        if(cachedTile.Count > 0 && cachedGameObjects.Count > 0)
+        {
+            cachedTile.Remove(cachedTile.Last());
+            Destroy(cachedGameObjects.Last());
+            cachedGameObjects.Remove(cachedGameObjects.Last());
         }
     }
 }

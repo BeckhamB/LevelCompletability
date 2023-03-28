@@ -74,5 +74,6 @@ public class MapGenerator : MonoBehaviour
             t.SetColour(t.cachedColour);
             t.SetText("");
         }
+
     }
 }

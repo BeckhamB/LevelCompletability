@@ -5,11 +5,16 @@ using UnityEngine;
 public class PathMovement : MonoBehaviour
 {
     public float speedMultiplier = 1;
-
+    static Animator anim;
+    private void Start()
+    {
+        anim = GetComponentInChildren<Animator>();
+    }
     public void SetPath(Queue<Tile> path)
     {
         StopAllCoroutines();
         StartCoroutine(MoveAlongPath(path));
+        
     }
 
     private IEnumerator MoveAlongPath(Queue<Tile> path)
@@ -26,6 +31,10 @@ public class PathMovement : MonoBehaviour
             {
                 lerpValue += Time.deltaTime * speedMultiplier;
                 transform.position = Vector3.Lerp(lastPosition, newNextTile, lerpValue);
+                if(anim != null)
+                {
+                    anim.SetBool("Walk Forward", true);
+                }
                 yield return new WaitForEndOfFrame();
             }
             yield return new WaitForSeconds(0.5f / speedMultiplier);

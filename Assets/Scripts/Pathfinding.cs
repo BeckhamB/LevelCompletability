@@ -16,20 +16,19 @@ public class Pathfinding : MonoBehaviour
     {
         Dictionary<Tile, Tile> nextTileTowardsGoal = new();
         Dictionary<Tile, int> costToReachTile = new();
-
         PriorityQueue<Tile> frontier = new();
         frontier.Enqueue(goal, 0);
         costToReachTile[goal] = 0;
 
         while (frontier.GetElementCount() > 0)
         {
-            Tile curTile = frontier.Dequeue();
-            if (curTile == start)
+            Tile currentTile = frontier.Dequeue();
+            if (currentTile == start)
                 break;
 
-            foreach (Tile neighbour in _mapGenerator.GetNeighbours(curTile))
+            foreach (Tile neighbour in _mapGenerator.GetNeighbours(currentTile))
             {
-                int newCost = costToReachTile[curTile] + neighbour.GetCost();
+                int newCost = costToReachTile[currentTile] + neighbour.GetCost();
                 if (costToReachTile.ContainsKey(neighbour) == false || newCost < costToReachTile[neighbour])
                 {
                     if (neighbour.GetTileType() != Tile.TileType.Wall)
@@ -37,7 +36,7 @@ public class Pathfinding : MonoBehaviour
                         costToReachTile[neighbour] = newCost;
                         int priority = newCost + Distance(neighbour, start);
                         frontier.Enqueue(neighbour, priority);
-                        nextTileTowardsGoal[neighbour] = curTile;
+                        nextTileTowardsGoal[neighbour] = currentTile;
                         neighbour.SetText(costToReachTile[neighbour].ToString());
                     }
                 }
